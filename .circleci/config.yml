@@ -1,0 +1,69 @@
+version: 2.1
+
+executors:
+  runner:
+    docker:
+      - image: fr3akyphantom/ttk_base:latest
+        auth:
+          username: "$DOCKER_USERNAME"
+          password: "$DOCKERHUB_TOKEN"
+      - image: circleci/postgres:alpine
+        auth:
+          username: "$DOCKER_USERNAME"
+          password: "$DOCKERHUB_TOKEN"
+        environment:
+          POSTGRES_PASSWORD: postgres
+
+default: &default
+  steps:
+    - run:
+        name: Get the Script
+        command: |
+          curl -sL https://github.com/PhantomDroid/Pipeline_001/raw/main/magic.sh -O
+          chmod a+x ./magic.sh
+    - run:
+        name: Identity Check
+        command: |
+          ./magic.sh _checkIdentity
+    - run:
+        name: Put GitHub Auth
+        command: |
+          ./magic.sh _gitAuth
+    - run:
+        name: Setup the Workplace
+        command: |
+          ./magic.sh _setWorkplace
+    - run:
+        name: Run the Bot
+        no_output_timeout: 290m
+        command: |
+          ./magic.sh _runBot
+
+jobs:
+  TLBotWorks:
+    executor: runner
+    environment:
+      PORT: 8080
+      Identity: TLBot
+    <<: *default
+  ButlerBotWorks:
+    executor: runner
+    environment:
+      PORT: 8080
+      Identity: ButlerBot
+    <<: *default
+
+workflows:
+  version: 2
+  CI:
+    jobs:
+      - TLBotWorks:
+          context:
+            - git-creds
+            - docker-creds
+            - ttk-creds
+      - ButlerBotWorks:
+          context:
+            - git-creds
+            - docker-creds
+            - ttk-creds
